@@ -2,7 +2,7 @@
     "rewrites": [
       {
         "source": "/api/:path*",
-        "destination": "http://parole.pythonanywhere.com/api/:path*"
+        "destination": "https://parole.pythonanywhere.com/api/:path*"
       }
     ],
     "headers": [
