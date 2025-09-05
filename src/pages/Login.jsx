@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TextField, Button, Box, Typography, Paper, Alert, CircularProgress, Link, Divider } from "@mui/material";
 import axios from "axios";
 
-const API_BASE_URL = "http://parole.pythonanywhere.com/api";
+const API_BASE_URL = "https://parole.pythonanywhere.com/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
