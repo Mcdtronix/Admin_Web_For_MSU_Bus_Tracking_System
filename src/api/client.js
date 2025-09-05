@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Prefer environment variable; fallback to deployed API
-// Set VITE_API_BASE_URL to override (e.g., http://localhost:8000/api)
-const baseURL = import.meta?.env?.VITE_API_BASE_URL || 'https://parole.pythonanywhere.com/api';
+// For production (Vercel), use the proxy path
+// For development, use the direct backend URL or localhost
+const baseURL = import.meta?.env?.VITE_API_BASE_URL || '/api';
 
 const client = axios.create({
   baseURL,
