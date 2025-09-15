@@ -14,15 +14,38 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    
+    console.log('Attempting login with:', { email, password: '***' });
+    
     try {
       const res = await client.post('/auth/login/', { email, password });
+      console.log('Login response:', res.data);
+      
       const token = res?.data?.token || res?.data?.access;
       if (!token) throw new Error('Missing token in response');
+      
       localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
-      const msg = err?.response?.data?.detail || "Invalid credentials";
-      setError(msg);
+      console.error('Login error:', err);
+      console.error('Error response:', err.response);
+      console.error('Error data:', err.response?.data);
+      
+      let errorMessage = "Login failed";
+      
+      if (err.response?.status === 400) {
+        errorMessage = err.response?.data?.detail || err.response?.data?.error || "Invalid credentials or missing fields";
+      } else if (err.response?.status === 401) {
+        errorMessage = "Invalid email or password";
+      } else if (err.response?.status === 403) {
+        errorMessage = "Account is disabled";
+      } else if (err.response?.status >= 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (err.code === 'NETWORK_ERROR' || err.message.includes('Network Error')) {
+        errorMessage = "Network error. Please check your connection.";
+      }
+      
+      setError(errorMessage);
     }
     setLoading(false);
   };
