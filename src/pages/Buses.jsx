@@ -43,7 +43,7 @@ export default function Buses() {
   const [buses, setBuses] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ plate_number: "", capacity: "" });
+  const [form, setForm] = useState({ bus_number: "", license_plate: "", capacity: "", driver_name: "", driver_phone: "", status: 'active' });
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (event, newValue) => {
@@ -57,17 +57,26 @@ const fetchBuses = () => getBuses().then(res => setBuses(res.data.results));
 
   const handleOpen = (bus = null) => {
     setEditing(bus);
-    setForm(bus ? { plate_number: bus.plate_number, capacity: bus.capacity } : { plate_number: "", capacity: "" });
+    setForm(bus ? {
+      bus_number: bus.bus_number || '',
+      license_plate: bus.license_plate || '',
+      capacity: bus.capacity ?? '',
+      driver_name: bus.driver_name || '',
+      driver_phone: bus.driver_phone || '',
+      status: bus.status || 'active'
+    } : { bus_number: "", license_plate: "", capacity: "", driver_name: "", driver_phone: "", status: 'active' });
     setOpen(true);
   };
 
   const handleClose = () => { setOpen(false); setEditing(null); };
 
   const handleSubmit = async () => {
+    const payload = { ...form };
+    if (payload.capacity === '') delete payload.capacity;
     if (editing) {
-      await updateBus(editing.id, form);
+      await updateBus(editing.id, payload);
     } else {
-      await addBus(form);
+      await addBus(payload);
     }
     fetchBuses();
     handleClose();

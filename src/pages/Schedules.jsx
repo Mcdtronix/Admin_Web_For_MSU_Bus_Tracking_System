@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem } from '@mui/material';
+import { Box, Typography, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Switch, FormControlLabel } from '@mui/material';
 import { getSchedules, addSchedule, updateSchedule, deleteSchedule } from '../api/schedules';
 import { getBuses } from '../api/buses';
 import { getRoutes } from '../api/routes';
@@ -29,8 +29,8 @@ export default function Schedules() {
     setEditing(row);
     setForm(
       row ? {
-        bus: row.bus,
-        route: row.route,
+        bus: row.bus || row.bus_id,
+        route: row.route || row.route_id,
         departure_time: row.departure_time,
         days_of_week: row.days_of_week,
         is_active: row.is_active,
@@ -108,12 +108,12 @@ export default function Schedules() {
         <DialogTitle>{editing ? 'Edit Schedule' : 'Add Schedule'}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mt: 1 }}>
-            <TextField select label="Bus" value={form.bus} onChange={(e) => setForm({ ...form, bus: e.target.value })}>
+            <TextField select label="Bus" value={form.bus} onChange={(e) => setForm({ ...form, bus: e.target.value })} required>
               {buses.map((b) => (
                 <MenuItem key={b.id} value={b.id}>{b.bus_number}</MenuItem>
               ))}
             </TextField>
-            <TextField select label="Route" value={form.route} onChange={(e) => setForm({ ...form, route: e.target.value })}>
+            <TextField select label="Route" value={form.route} onChange={(e) => setForm({ ...form, route: e.target.value })} required>
               {routes.map((r) => (
                 <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
               ))}
@@ -123,7 +123,8 @@ export default function Schedules() {
                 <MenuItem key={d.value} value={d.value}>{d.label}</MenuItem>
               ))}
             </TextField>
-            <TextField label="Departure Time" type="time" value={form.departure_time} onChange={(e) => setForm({ ...form, departure_time: e.target.value })} inputProps={{ step: 300 }} />
+            <TextField label="Departure Time" type="time" value={form.departure_time} onChange={(e) => setForm({ ...form, departure_time: e.target.value })} inputProps={{ step: 300 }} required />
+            <FormControlLabel control={<Switch checked={!!form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />} label="Active" />
           </Box>
         </DialogContent>
         <DialogActions>

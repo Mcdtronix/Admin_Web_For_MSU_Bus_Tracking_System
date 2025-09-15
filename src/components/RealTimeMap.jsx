@@ -14,7 +14,9 @@ import {
   GoogleMap, 
   Marker, 
   useJsApiLoader,
-  InfoWindow
+  InfoWindow,
+  TransitLayer,
+  TrafficLayer
 } from '@react-google-maps/api';
 import { getBusLocations } from '../api/busLocations';
 import client from '../api/client';
@@ -71,6 +73,9 @@ function RealTimeMap() {
   const [selectedBus, setSelectedBus] = useState(null);
   const [mapCenter, setMapCenter] = useState(defaultCenter);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [mapType, setMapType] = useState('roadmap'); // 'roadmap' | 'satellite' | 'hybrid' | 'terrain'
+  const [showTransit, setShowTransit] = useState(false);
+  const [showTraffic, setShowTraffic] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'online', 'offline', 'error', 'connecting'
   const [retryCount, setRetryCount] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -131,26 +136,60 @@ function RealTimeMap() {
         throw new Error('No connection to server');
       }
 
+      console.log('Fetching bus locations...');
       const response = await getBusLocations();
+      console.log('Bus locations response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      console.log('Data type:', typeof response.data);
+      console.log('Data length:', Array.isArray(response.data) ? response.data.length : 'Not an array');
+      
       const locations = response.data;
       
-      if (locations && Array.isArray(locations) && locations.length > 0) {
+      // Handle different response formats
+      let locationArray = locations;
+      if (locations && typeof locations === 'object' && !Array.isArray(locations)) {
+        // If response is wrapped in an object, try to extract the array
+        if (locations.results) {
+          locationArray = locations.results;
+        } else if (locations.data) {
+          locationArray = locations.data;
+        } else {
+          // Convert object to array if it has numeric keys
+          locationArray = Object.values(locations);
+        }
+      }
+      
+      console.log('Processed locations:', locationArray);
+      console.log('Is array:', Array.isArray(locationArray));
+      console.log('Length:', Array.isArray(locationArray) ? locationArray.length : 'Not an array');
+      
+      if (locationArray && Array.isArray(locationArray) && locationArray.length > 0) {
+        console.log(`Found ${locationArray.length} bus locations`);
+        
         // Update map center to first bus location if no bus is selected
         if (!selectedBus) {
-          const firstBus = locations[0];
+          const firstBus = locationArray[0];
           if (firstBus.latitude && firstBus.longitude) {
             setMapCenter({
               lat: parseFloat(firstBus.latitude),
               lng: parseFloat(firstBus.longitude)
             });
+            console.log('Updated map center to first bus location');
           }
         }
         
         // Filter out any invalid locations and transform data
-        const validLocations = locations
-          .filter(loc => loc.latitude && loc.longitude && 
+        const validLocations = locationArray
+          .filter(loc => {
+            const isValid = loc.latitude && loc.longitude && 
                    !isNaN(parseFloat(loc.latitude)) && 
-                   !isNaN(parseFloat(loc.longitude)))
+                   !isNaN(parseFloat(loc.longitude));
+            if (!isValid) {
+              console.warn('Invalid location data:', loc);
+            }
+            return isValid;
+          })
           .map(loc => ({
             ...loc,
             latitude: parseFloat(loc.latitude),
@@ -159,16 +198,21 @@ function RealTimeMap() {
             last_updated: loc.timestamp || new Date().toISOString()
           }));
         
+        console.log(`Valid locations: ${validLocations.length}`);
+        
         if (isMounted.current) {
           setBusLocations(validLocations);
           setLastUpdated(new Date());
           setConnectionStatus('online');
           setRetryCount(0);
+          showSnackbar(`Updated ${validLocations.length} bus locations`, 'success');
         }
       } else {
+        console.log('No bus locations found');
         if (isMounted.current) {
           setBusLocations([]);
           setConnectionStatus('online');
+          showSnackbar('No buses currently active', 'info');
         }
       }
       
@@ -180,7 +224,7 @@ function RealTimeMap() {
       console.error('Error fetching bus locations:', err);
       
       if (isMounted.current) {
-        const errorMessage = err.response?.data?.message || 'Failed to load bus locations';
+        const errorMessage = err.response?.data?.message || err.message || 'Failed to load bus locations';
         setError(errorMessage);
         setConnectionStatus('error');
         
@@ -283,7 +327,7 @@ function RealTimeMap() {
             mr: 0.5
           }} />
           <Typography variant="caption" color="textSecondary">
-            Live
+            Live ({busLocations.length} buses)
           </Typography>
         </>
       ) : (
@@ -293,6 +337,44 @@ function RealTimeMap() {
             Connecting...
           </Typography>
         </>
+      )}
+    </Box>
+  );
+
+  // Debug panel for development
+  const DebugPanel = () => (
+    <Box sx={{
+      position: 'absolute',
+      bottom: 10,
+      left: 10,
+      zIndex: 1,
+      backgroundColor: 'rgba(0,0,0,0.8)',
+      color: 'white',
+      padding: '8px',
+      borderRadius: '4px',
+      fontSize: '12px',
+      maxWidth: '300px',
+      display: process.env.NODE_ENV === 'development' ? 'block' : 'none'
+    }}>
+      <Typography variant="caption" display="block">
+        <strong>Debug Info:</strong>
+      </Typography>
+      <Typography variant="caption" display="block">
+        Status: {connectionStatus}
+      </Typography>
+      <Typography variant="caption" display="block">
+        Buses: {busLocations.length}
+      </Typography>
+      <Typography variant="caption" display="block">
+        Last Update: {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
+      </Typography>
+      <Typography variant="caption" display="block">
+        Retry Count: {retryCount}
+      </Typography>
+      {error && (
+        <Typography variant="caption" display="block" color="error">
+          Error: {error}
+        </Typography>
       )}
     </Box>
   );
@@ -362,6 +444,7 @@ function RealTimeMap() {
   return (
     <Box sx={{ position: 'relative', width: '100%' }}>
       <ConnectionStatus />
+      <DebugPanel />
       <Box sx={{ 
         position: 'absolute', 
         top: 10, 
@@ -384,6 +467,23 @@ function RealTimeMap() {
             </IconButton>
           </Tooltip>
         )}
+        {/* Map Type Switcher */}
+        <Tooltip title="Map type: Roadmap">
+          <Button size="small" variant={mapType === 'roadmap' ? 'contained' : 'text'} onClick={() => setMapType('roadmap')} sx={{ minWidth: 0, px: 1 }}>Map</Button>
+        </Tooltip>
+        <Tooltip title="Map type: Satellite">
+          <Button size="small" variant={mapType === 'satellite' ? 'contained' : 'text'} onClick={() => setMapType('satellite')} sx={{ minWidth: 0, px: 1 }}>Satellite</Button>
+        </Tooltip>
+        <Tooltip title="Map type: Terrain">
+          <Button size="small" variant={mapType === 'terrain' ? 'contained' : 'text'} onClick={() => setMapType('terrain')} sx={{ minWidth: 0, px: 1 }}>Terrain</Button>
+        </Tooltip>
+        {/* Layers toggles */}
+        <Tooltip title="Toggle Transit Layer">
+          <Button size="small" variant={showTransit ? 'contained' : 'text'} onClick={() => setShowTransit(v => !v)} sx={{ minWidth: 0, px: 1 }}>Transit</Button>
+        </Tooltip>
+        <Tooltip title="Toggle Traffic Layer">
+          <Button size="small" variant={showTraffic ? 'contained' : 'text'} onClick={() => setShowTraffic(v => !v)} sx={{ minWidth: 0, px: 1 }}>Traffic</Button>
+        </Tooltip>
         {lastUpdated && (
           <Typography variant="caption" color="textSecondary">
             Updated: {new Date(lastUpdated).toLocaleTimeString()}
@@ -395,6 +495,7 @@ function RealTimeMap() {
         mapContainerStyle={containerStyle}
         center={mapCenter}
         zoom={14}
+        mapTypeId={mapType}
         options={{
           streetViewControl: false,
           mapTypeControl: false,
@@ -409,6 +510,8 @@ function RealTimeMap() {
           ]
         }}
       >
+        {showTransit && <TransitLayer />}
+        {showTraffic && <TrafficLayer />}
         {busLocations.map((bus) => {
           const position = {
             lat: parseFloat(bus.latitude),

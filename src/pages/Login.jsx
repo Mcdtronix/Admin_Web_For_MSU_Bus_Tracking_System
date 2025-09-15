@@ -1,9 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextField, Button, Box, Typography, Paper, Alert, CircularProgress, Link, Divider } from "@mui/material";
-import axios from "axios";
-
-const API_BASE_URL = "https://parole.pythonanywhere.com/api";
+import client from "../api/client";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,8 +15,10 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await axios.post(`${API_BASE_URL}/auth/login/`, { email, password });
-      localStorage.setItem("token", res.data.access);
+      const res = await client.post('/auth/login/', { email, password });
+      const token = res?.data?.token || res?.data?.access;
+      if (!token) throw new Error('Missing token in response');
+      localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
       const msg = err?.response?.data?.detail || "Invalid credentials";

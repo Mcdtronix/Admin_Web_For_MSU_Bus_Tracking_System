@@ -6,6 +6,7 @@ import BarChartIcon from "@mui/icons-material/BarChart";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import GpsFixedIcon from "@mui/icons-material/GpsFixed";
 import PlaceIcon from "@mui/icons-material/Place";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
 import { NavLink } from "react-router-dom";
 
 export default function Sidebar() {
@@ -15,17 +16,18 @@ export default function Sidebar() {
     { to: "/schedules", icon: <ScheduleIcon />, label: "Bus Schedules" },
     { to: "/trackers", icon: <GpsFixedIcon />, label: "Bus Trackers" },
     { to: "/stations", icon: <PlaceIcon />, label: "Bus Stations" },
+    { to: "/locations", icon: <LocationOnIcon />, label: "Bus Locations" },
     { to: "/routes", icon: <TimelineIcon />, label: "Routes" },
     { to: "/analytics", icon: <BarChartIcon />, label: "Analytics" },
   ];
   
   // Group related items for better organization
   const busManagementItems = navItems.filter(item => 
-    ['/buses', '/schedules', '/trackers', '/stations'].includes(item.to)
+    ['/buses', '/schedules', '/trackers', '/stations', '/locations'].includes(item.to)
   );
   
   const otherItems = navItems.filter(item => 
-    !['/buses', '/schedules', '/trackers', '/stations'].includes(item.to)
+    !['/buses', '/schedules', '/trackers', '/stations', '/locations'].includes(item.to)
   );
   return (
     <Drawer variant="permanent" anchor="left" sx={{ width: 240 }}>

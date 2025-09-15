@@ -6,7 +6,7 @@ export default function Stations() {
   const [stations, setStations] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', latitude: '', longitude: '', is_active: true });
+  const [form, setForm] = useState({ name: '', latitude: '', longitude: '', description: '', is_active: true });
 
   const fetchStations = async () => {
     const res = await getStations();
@@ -21,8 +21,8 @@ export default function Stations() {
     setEditing(station);
     setForm(
       station
-        ? { name: station.name || '', latitude: station.latitude || '', longitude: station.longitude || '', is_active: station.is_active !== false }
-        : { name: '', latitude: '', longitude: '', is_active: true }
+        ? { name: station.name || '', latitude: station.latitude || '', longitude: station.longitude || '', description: station.description || '', is_active: station.is_active !== false }
+        : { name: '', latitude: '', longitude: '', description: '', is_active: true }
     );
     setOpen(true);
   };
@@ -62,6 +62,7 @@ export default function Stations() {
         <Box component="thead" sx={{ bgcolor: 'grey.100' }}>
           <Box component="tr">
             <Box component="th" sx={{ textAlign: 'left', p: 1 }}>Name</Box>
+            <Box component="th" sx={{ textAlign: 'left', p: 1 }}>Description</Box>
             <Box component="th" sx={{ textAlign: 'left', p: 1 }}>Latitude</Box>
             <Box component="th" sx={{ textAlign: 'left', p: 1 }}>Longitude</Box>
             <Box component="th" sx={{ textAlign: 'left', p: 1 }}>Active</Box>
@@ -72,6 +73,7 @@ export default function Stations() {
           {stations.map((s) => (
             <Box component="tr" key={s.id} sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
               <Box component="td" sx={{ p: 1 }}>{s.name}</Box>
+              <Box component="td" sx={{ p: 1 }}>{s.description || '-'}</Box>
               <Box component="td" sx={{ p: 1 }}>{s.latitude}</Box>
               <Box component="td" sx={{ p: 1 }}>{s.longitude}</Box>
               <Box component="td" sx={{ p: 1 }}>{s.is_active ? 'Yes' : 'No'}</Box>
@@ -88,9 +90,10 @@ export default function Stations() {
         <DialogTitle>{editing ? 'Edit Station' : 'Add Station'}</DialogTitle>
         <DialogContent dividers>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mt: 1 }}>
-            <TextField label="Name" fullWidth value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            <TextField label="Latitude" fullWidth value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} />
-            <TextField label="Longitude" fullWidth value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} />
+            <TextField label="Name" fullWidth value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <TextField label="Latitude" fullWidth value={form.latitude} onChange={(e) => setForm({ ...form, latitude: e.target.value })} required />
+            <TextField label="Longitude" fullWidth value={form.longitude} onChange={(e) => setForm({ ...form, longitude: e.target.value })} required />
+            <TextField label="Description" fullWidth multiline rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             <FormControlLabel control={<Switch checked={!!form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />} label="Active" />
           </Box>
         </DialogContent>

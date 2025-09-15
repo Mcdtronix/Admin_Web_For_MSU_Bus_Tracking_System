@@ -9,6 +9,7 @@ import Schedules from "./pages/Schedules";
 import Bookings from "./pages/Bookings";
 import Analytics from "./pages/Analytics";
 import BusTrackers from "./pages/BusTrackers";
+import BusLocations from "./pages/BusLocations";
 import Sidebar from "./components/Sidebar.jsx";
 import TopBar from "./components/TopBar.jsx";
 import { Box } from "@mui/material";
@@ -80,6 +81,10 @@ function App() {
             <Route
               path="/trackers"
               element={isAuthenticated ? <BusTrackers /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/locations"
+              element={isAuthenticated ? <BusLocations /> : <Navigate to="/login" />}
             />
             <Route
               path="*"

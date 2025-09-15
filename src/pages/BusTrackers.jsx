@@ -23,10 +23,13 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
-  Divider
+  Divider,
+  Switch,
+  FormControlLabel
 } from '@mui/material';
 import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import client from '../api/client';
+import { getTrackers, addTracker, updateTracker, deleteTracker } from '../api/trackers';
+import { getBuses } from '../api/buses';
 
 const BusTrackers = () => {
   const [trackers, setTrackers] = useState([]);
@@ -40,22 +43,15 @@ const BusTrackers = () => {
   const [form, setForm] = useState({
     device_id: '',
     bus: '',
-    is_active: true,
-    plate_number: ''
+    is_active: true
   });
 
   // Fetch all trackers
   const fetchTrackers = async () => {
     try {
       setLoading(prev => ({ ...prev, trackers: true }));
-      // Get all trackers with their associated bus data
-      const response = await client.get('/api/trackers/');
-      const trackersData = response.data.map(tracker => ({
-        ...tracker,
-        bus: tracker.bus || { id: null, plate_number: 'Unassigned' },
-        last_updated: tracker.last_ping ? new Date(tracker.last_ping) : null
-      }));
-      
+      const response = await getTrackers();
+      const trackersData = Array.isArray(response.data) ? response.data : (response.data.results || []);
       setTrackers(trackersData);
     } catch (err) {
       setError('Failed to fetch trackers');
@@ -65,28 +61,13 @@ const BusTrackers = () => {
     }
   };
 
-  // Fetch all buses for the dropdown with driver information
+  // Fetch all buses for the dropdown
   const fetchBuses = async () => {
     try {
       setLoading(prev => ({ ...prev, buses: true }));
-      // Include driver information in the response
-      const response = await client.get('/api/buses/?include_driver=true');
-      
-      // Handle both array and paginated responses
-      const busesData = Array.isArray(response.data) 
-        ? response.data 
-        : (response.data?.results || []);
-      
-      // Filter out invalid buses and map to ensure consistent structure
-      const validBuses = busesData
-        .filter(bus => bus && bus.id)
-        .map(bus => ({
-          ...bus,
-          // Ensure driver object has a consistent structure
-          driver: bus.driver || null
-        }));
-      
-      setBuses(validBuses);
+      const response = await getBuses();
+      const busesData = Array.isArray(response.data) ? response.data : (response.data.results || []);
+      setBuses(busesData);
     } catch (err) {
       console.error('Error fetching buses:', err);
       setError('Failed to load bus list. Please try again later.');
@@ -106,18 +87,15 @@ const BusTrackers = () => {
       setEditing(tracker.id);
       setForm({
         device_id: tracker.device_id,
-        bus: tracker.bus?.id || '',
-        is_active: tracker.is_active,
-        // Keep the plate number for display purposes only
-        plate_number: tracker.bus?.plate_number || ''
+        bus: tracker.bus || '',
+        is_active: tracker.is_active
       });
     } else {
       setEditing(null);
       setForm({
         device_id: '',
         bus: '',
-        is_active: true,
-        plate_number: ''
+        is_active: true
       });
     }
     setOpen(true);
@@ -148,10 +126,10 @@ const BusTrackers = () => {
       };
 
       if (editing) {
-        await client.put(`/api/trackers/${editing}/`, payload);
+        await updateTracker(editing, payload);
         setSnackbar({ open: true, message: 'Tracker updated successfully', severity: 'success' });
       } else {
-        await client.post('/api/trackers/', payload);
+        await addTracker(payload);
         setSnackbar({ open: true, message: 'Tracker added successfully', severity: 'success' });
       }
       
@@ -166,7 +144,7 @@ const BusTrackers = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this tracker?')) {
       try {
-        await client.delete(`/api/trackers/${id}/`);
+        await deleteTracker(id);
         setSnackbar({ open: true, message: 'Tracker deleted successfully', severity: 'success' });
         fetchTrackers();
       } catch (err) {
@@ -314,27 +292,16 @@ const BusTrackers = () => {
                 </Select>
               </FormControl>
 
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Status</InputLabel>
-              <Select
-                name="is_active"
-                value={form.is_active}
-                onChange={(e) => setForm(prev => ({ ...prev, is_active: e.target.value === 'true' }))}
-                label="Status"
-              >
-                <MenuItem value={true}>Active</MenuItem>
-                <MenuItem value={false}>Inactive</MenuItem>
-              </Select>
-              
-              {form.last_updated && (
-                <Box mt={2}>
-                  <Typography variant="subtitle2" gutterBottom>Last Ping:</Typography>
-                  <Typography variant="body2">
-                    {new Date(form.last_updated).toLocaleString()}
-                  </Typography>
-                </Box>
-              )}
-            </FormControl>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={form.is_active}
+                  onChange={(e) => setForm(prev => ({ ...prev, is_active: e.target.checked }))}
+                  name="is_active"
+                />
+              }
+              label="Active"
+            />
 
             {error && (
               <Alert severity="error" sx={{ mt: 2 }}>

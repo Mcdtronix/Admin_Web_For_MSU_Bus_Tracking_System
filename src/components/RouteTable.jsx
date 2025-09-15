@@ -17,10 +17,12 @@ export default function RouteTable({ routes, onEdit, onDelete, onSuspend }) {
       <TableHead>
         <TableRow>
           <TableCell>Name</TableCell>
-          <TableCell>From</TableCell>
-          <TableCell>To</TableCell>
+          <TableCell>From Station</TableCell>
+          <TableCell>To Station</TableCell>
+          <TableCell>Distance (km)</TableCell>
+          <TableCell>Duration (min)</TableCell>
           <TableCell>Price</TableCell>
-          <TableCell>Suspended</TableCell>
+          <TableCell>Active</TableCell>
           <TableCell>Actions</TableCell>
         </TableRow>
       </TableHead>
@@ -28,12 +30,14 @@ export default function RouteTable({ routes, onEdit, onDelete, onSuspend }) {
         {routes.map((route) => (
           <TableRow key={route.id}>
             <TableCell>{route.name}</TableCell>
-            <TableCell>{route.from_station}</TableCell>
-            <TableCell>{route.to_station}</TableCell>
-            <TableCell>{route.price}</TableCell>
+            <TableCell>{route.from_station_name || route.from_station}</TableCell>
+            <TableCell>{route.to_station_name || route.to_station}</TableCell>
+            <TableCell>{route.distance}</TableCell>
+            <TableCell>{route.estimated_duration}</TableCell>
+            <TableCell>${route.price}</TableCell>
             <TableCell>
               <Switch
-                checked={route.suspended}
+                checked={route.is_active}
                 onChange={() => onSuspend(route)}
               />
             </TableCell>

@@ -7,25 +7,31 @@ import {
   deleteRoute,
   suspendRoute,
 } from "../api/routes";
+import { getStations } from "../api/stations";
 import RouteTable from "../components/RouteTable";
 import RouteForm from "../components/RouteForm";
 
 export default function RoutesPage() {
   const [routes, setRoutes] = useState([]);
+  const [stations, setStations] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     name: "",
     from_station: "",
     to_station: "",
+    distance: "",
+    estimated_duration: "",
     price: "",
+    is_active: true,
   });
 
-  // In Routes.jsx
-const fetchRoutes = () => getRoutes().then(res => setRoutes(res.data.results));
+  const fetchRoutes = () => getRoutes().then(res => setRoutes(Array.isArray(res.data) ? res.data : (res.data.results || [])));
+  const fetchStations = () => getStations().then(res => setStations(Array.isArray(res.data) ? res.data : (res.data.results || [])));
 
   useEffect(() => {
     fetchRoutes();
+    fetchStations();
   }, []);
 
   const handleOpen = (route = null) => {
@@ -33,12 +39,23 @@ const fetchRoutes = () => getRoutes().then(res => setRoutes(res.data.results));
     setForm(
       route
         ? {
-            name: route.name,
-            from_station: route.from_station,
-            to_station: route.to_station,
-            price: route.price,
+            name: route.name || "",
+            from_station: route.from_station || "",
+            to_station: route.to_station || "",
+            distance: route.distance || "",
+            estimated_duration: route.estimated_duration || "",
+            price: route.price || "",
+            is_active: route.is_active !== false,
           }
-        : { name: "", from_station: "", to_station: "", price: "" }
+        : { 
+            name: "", 
+            from_station: "", 
+            to_station: "", 
+            distance: "", 
+            estimated_duration: "", 
+            price: "", 
+            is_active: true 
+          }
     );
     setOpen(true);
   };
@@ -89,6 +106,7 @@ const fetchRoutes = () => getRoutes().then(res => setRoutes(res.data.results));
         form={form}
         setForm={setForm}
         editing={editing}
+        stations={stations}
       />
     </Box>
   );
